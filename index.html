@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>提案確認 | 幹部会議室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2F0EA; --ink:#1C2333; --muted:#54524B; --line:#DEDACE;
+    --gold:#B08D57; --green:#4C7A5E; --clay:#B4543A; --card:#FFFFFF; --red:#B23A2E;
+    --gold-text:#8A6636; --green-text:#355F49; --clay-text:#97402A;
+  }
+  html{ color-scheme: light only; background:var(--paper); }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Zen Kaku Gothic New', sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Shippori Mincho', serif; font-weight:700; margin:0; }
+  .wrap{ max-width:520px; margin:0 auto; padding:0 0 80px; min-height:100vh; }
+
+  header.top{ padding:22px 20px 16px; border-bottom:1px solid var(--line); background:var(--paper); position:sticky; top:0; z-index:5; }
+  header.top h1{ font-size:20px; letter-spacing:.02em; }
+  header.top .sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+  .who{ display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+  .who span{ font-size:13px; color:var(--muted); }
+  .who button{ background:none; border:1px solid var(--line); color:var(--ink); font-size:12px; padding:4px 10px; border-radius:3px; font-family:inherit; cursor:pointer; }
+
+  #loginScreen{ padding:60px 24px; text-align:center; background:var(--ink); min-height:100vh; }
+  #loginScreen h2{ font-size:22px; margin-bottom:10px; color:#FFFFFF; }
+  #loginScreen p{ color:#D8BE93; font-size:13px; margin-bottom:28px; }
+  .name-list{ display:flex; flex-direction:column; gap:12px; }
+  .name-btn{
+    background:#FFFFFF; border:1px solid var(--line); border-left:4px solid var(--gold);
+    border-radius:4px; padding:17px 18px; font-size:16px; font-weight:500; font-family:inherit;
+    color:var(--ink); cursor:pointer; text-align:left; box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  .name-btn:active{ background:#F8F1E4; border-left-color:var(--gold-text); }
+
+  /* ToDo パネル */
+  .internal-post-btn{
+    display:block; width:calc(100% - 32px); margin:14px 16px 0; padding:13px;
+    background:var(--card); border:1px dashed var(--gold); border-radius:4px;
+    color:var(--gold-text); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .source-tag{ font-size:10px; padding:2px 8px; border-radius:3px; font-weight:700; background:#EDE7F6; color:#5B3D8A; white-space:nowrap; }
+
+  .todo-panel{ margin:14px 16px 4px; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:4px; }
+  .todo-title{ font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between; }
+  .todo-item{ display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-top:1px solid var(--line); font-size:13px; cursor:pointer; }
+  .todo-item:first-of-type{ border-top:none; }
+  .todo-item .d{ font-size:11px; color:var(--muted); white-space:nowrap; margin-left:8px; }
+  .todo-item.overdue .d, .todo-item.overdue .t{ color:var(--red); font-weight:700; }
+  .todo-empty{ font-size:13px; color:var(--muted); padding:4px 0; }
+
+  .filters{ display:flex; gap:8px; padding:14px 16px 4px; overflow-x:auto; }
+  .filter-chip{ font-size:12px; padding:6px 12px; border:1px solid var(--line); border-radius:20px; color:var(--muted); white-space:nowrap; cursor:pointer; }
+  .filter-chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  #listScreen{ padding:6px 16px 14px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-left:5px solid var(--muted); border-radius:3px; margin-bottom:12px; padding:14px 16px; cursor:pointer; }
+  .card.st-pending{ border-left-color:var(--muted); }
+  .card.st-considering{ border-left-color:var(--gold); }
+  .card.st-decided-go{ border-left-color:var(--green); }
+  .card.st-decided-no{ border-left-color:var(--clay); }
+  .card.st-info{ border-left-color:#8A93A6; }
+
+  .card .row1{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .dealer{ font-size:11px; color:var(--muted); letter-spacing:.02em; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+  .tag.pending{ background:#ECE9E2; color:var(--muted); }
+  .tag.considering{ background:#F3E9D8; color:var(--gold-text); }
+  .tag.go{ background:#E4EEE8; color:var(--green-text); }
+  .tag.no{ background:#F3E3DD; color:var(--clay-text); }
+  .tag.info{ background:#E9EBF1; color:#5A6478; }
+
+  .cat-tags{ display:flex; gap:6px; margin:6px 0; flex-wrap:wrap; }
+  .cat-tag{ font-size:10px; padding:2px 7px; border:1px solid var(--line); border-radius:3px; color:var(--muted); }
+  .store-tags{ display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; }
+  .store-tag{ font-size:10px; padding:3px 9px; border-radius:3px; font-weight:700; color:#fff; white-space:nowrap; }
+  .store-tag.salon{ background:var(--ink); }
+  .store-tag.spa{ background:var(--gold-text); }
+
+  .title{ font-family:'Shippori Mincho',serif; font-size:17px; margin:6px 0 4px; }
+  .meta{ font-size:12px; color:var(--muted); }
+  a{ color:var(--gold-text); font-weight:600; }
+  .progress{ font-size:12px; color:var(--muted); margin-top:8px; }
+  .empty{ text-align:center; color:var(--muted); padding:60px 20px; font-size:13px; }
+
+  #mainScreens{ background:var(--paper); min-height:100vh; }
+  #detailScreen{ padding:16px; display:none; background:var(--paper); min-height:100vh; }
+  .back{ font-size:13px; color:var(--muted); background:none; border:none; padding:0 0 16px; cursor:pointer; font-family:inherit; }
+  .detail-image{ width:100%; border-radius:4px; margin-bottom:14px; display:none; }
+  .detail-title{ font-size:21px; margin-bottom:6px; }
+  .detail-dealer{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .kv{ display:flex; border-top:1px solid var(--line); padding:10px 0; font-size:14px; }
+  .kv .k{ width:88px; color:var(--muted); flex-shrink:0; }
+  .reason{ white-space:pre-wrap; line-height:1.7; font-size:14px; }
+
+  .section-label{ font-size:12px; color:var(--muted); margin:26px 0 10px; letter-spacing:.03em; }
+
+  .judge-btns{ display:flex; gap:10px; }
+  .jbtn{ flex:1; padding:14px; border-radius:4px; border:1px solid var(--line); background:var(--card); font-family:inherit; font-size:14px; cursor:pointer; }
+  .jbtn.sel-go{ background:var(--green-text); color:#fff; border-color:var(--green-text); }
+  .jbtn.sel-no{ background:var(--clay-text); color:#fff; border-color:var(--clay-text); }
+
+  .action-btns{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .abtn{ padding:12px 14px; border-radius:4px; border:1px solid var(--line); background:var(--card); font-family:inherit; font-size:13px; text-align:left; cursor:pointer; }
+  .abtn.sel{ border-color:var(--gold); background:#F8F1E4; }
+
+  .exec-grid{ display:flex; flex-direction:column; gap:0; border-top:1px solid var(--line); }
+  .exec-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .exec-status{ font-size:12px; color:var(--muted); }
+  .exec-status.go{ color:var(--green-text); }
+  .exec-status.no{ color:var(--clay-text); }
+  .exec-status.read{ color:var(--green-text); }
+
+  .decision-banner{ margin-top:24px; padding:16px; border-radius:4px; font-size:14px; line-height:1.6; }
+  .decision-banner.go{ background:#E4EEE8; color:var(--green-text); }
+  .decision-banner.no{ background:#F3E3DD; color:var(--clay-text); }
+  .decision-banner.pending{ background:#ECE9E2; color:var(--muted); }
+
+  .read-btn{ width:100%; padding:15px; border:none; border-radius:4px; background:var(--ink); color:#fff; font-family:inherit; font-size:15px; cursor:pointer; margin-top:8px; }
+  .read-btn:disabled{ background:var(--green); opacity:.85; }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(28,35,51,.55); z-index:50;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal-box{
+    background:var(--card); width:100%; max-width:520px; border-radius:12px 12px 0 0;
+    padding:24px 20px 28px; box-shadow:0 -4px 24px rgba(0,0,0,.2);
+  }
+  .modal-box h3{ font-size:17px; margin-bottom:16px; }
+  .modal-options{ display:flex; flex-direction:column; gap:10px; }
+  .modal-opt{
+    padding:14px; border:1px solid var(--line); border-radius:4px; background:var(--paper);
+    font-family:inherit; font-size:14px; text-align:left; cursor:pointer;
+  }
+  .modal-opt.sel{ border-color:var(--gold); background:#F8F1E4; font-weight:700; color:var(--gold-text); }
+  .modal-deadline-area{ margin-top:14px; }
+  .modal-deadline-area label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+  .modal-deadline-area input{ width:100%; padding:11px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px; box-sizing:border-box; }
+  .modal-actions{ display:flex; gap:10px; margin-top:20px; }
+  .modal-actions button{ flex:1; padding:14px; border-radius:4px; font-family:inherit; font-size:14px; cursor:pointer; }
+  .modal-cancel{ background:var(--card); border:1px solid var(--line); color:var(--muted); }
+  .modal-confirm{ background:var(--ink); border:1px solid var(--ink); color:#fff; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>提案確認</h1>
+    <div class="sub">美容ディーラー・メーカーからの新着情報</div>
+    <div class="who" id="whoBar" style="display:none;">
+      <span id="whoName"></span>
+      <button onclick="logout()">名前を変更</button>
+    </div>
+  </header>
+
+  <div id="loginScreen">
+    <h2>お名前を選択してください</h2>
+    <p>パスワードは不要です。ご自身のお名前をタップしてください。</p>
+    <div class="name-list" id="nameList"></div>
+  </div>
+
+  <div id="mainScreens" style="display:none;">
+    <button class="internal-post-btn" onclick="openInternalProposalModal()">＋ 社内から提案する</button>
+    <div class="todo-panel" id="todoPanel"></div>
+    <div class="filters" id="filters"></div>
+    <div id="listScreen"></div>
+  </div>
+
+  <div id="detailScreen">
+    <button class="back" onclick="showList()">← 一覧に戻る</button>
+    <div id="detailBody"></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="considerModal">
+  <div class="modal-box">
+    <h3>「検討する」の内容を教えてください</h3>
+    <div class="modal-options">
+      <button type="button" class="modal-opt" data-value="サンプル要請" onclick="selectConsiderDetail('サンプル要請')">サンプル要請</button>
+      <button type="button" class="modal-opt" data-value="もう少し詳しく聞きたい" onclick="selectConsiderDetail('もう少し詳しく聞きたい')">もう少し詳しく聞きたい</button>
+      <button type="button" class="modal-opt" data-value="社内でもう少し検討したい" onclick="selectConsiderDetail('社内でもう少し検討したい')">社内でもう少し検討したい</button>
+    </div>
+    <div class="modal-deadline-area" id="modalDeadlineArea" style="display:none;">
+      <label>期限はいつですか?</label>
+      <input type="date" id="modalDeadline">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-cancel" onclick="closeConsiderModal()">キャンセル</button>
+      <button type="button" class="modal-confirm" onclick="confirmConsiderModal()">この内容で検討する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="internalProposalModal">
+  <div class="modal-box">
+    <h3>社内から提案する</h3>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">タイトル</label>
+        <input type="text" id="ipTitle" placeholder="例)朝礼のやり方を変えたい" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">提案内容・理由</label>
+        <textarea id="ipReason" placeholder="提案したい内容と、その理由をご記入ください" style="width:100%; min-height:100px; padding:12px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
+      </div>
+      <div>
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">宛先</label>
+        <select id="ipRecipient" style="width:100%; padding:12px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px;">
+          <option value="全体">全体(みんなに見てほしい)</option>
+        </select>
+      </div>
+      <div id="ipMessageArea" style="display:none;">
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">宛先へのメッセージ(任意)</label>
+        <textarea id="ipRecipientMessage" placeholder="個別に伝えたいことがあれば" style="width:100%; min-height:70px; padding:12px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px; box-sizing:border-box;"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-cancel" onclick="closeInternalProposalModal()">キャンセル</button>
+      <button type="button" class="modal-confirm" onclick="submitInternalProposal()">この内容で提案する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbybNWscWj2DJIjRuE-sBav6iXyb7beUGvGO1U9w21GP28PCieSITyeUF9fMWBOHDrK1SA/exec';
+const NEXT_ACTIONS = ['体験会','説明会','勉強会','オンラインで詳しく聞きたい'];
+const CATEGORY_TYPES = ['提案'];
+
+let currentUser = localStorage.getItem('salon_exec_name') || '';
+let proposals = [];
+let currentDetailId = null;
+let activeFilter = 'todo';
+
+function jsonp(action, params){
+  return new Promise((resolve) => {
+    const cbName = 'cb_' + Math.random().toString(36).slice(2);
+    window[cbName] = (data) => { resolve(data); delete window[cbName]; script.remove(); };
+    const qs = new URLSearchParams({ action, callback: cbName, ...params });
+    const script = document.createElement('script');
+    script.src = GAS_URL + '?' + qs.toString();
+    document.body.appendChild(script);
+  });
+}
+function post(action, payload){
+  return fetch(GAS_URL, {
+    method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload })
+  }).then(r => r.json());
+}
+
+let executivesList = [];
+async function init(){
+  const res = await jsonp('listExecutives', {});
+  executivesList = res.executives || [];
+  const list = document.getElementById('nameList');
+  list.innerHTML = '';
+  executivesList.forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'name-btn'; b.textContent = name;
+    b.onclick = () => selectUser(name);
+    list.appendChild(b);
+  });
+  if (currentUser){ showList(); loadProposals(); }
+}
+
+function selectUser(name){
+  currentUser = name;
+  localStorage.setItem('salon_exec_name', name);
+  showList(); loadProposals();
+}
+function logout(){
+  currentUser = '';
+  localStorage.removeItem('salon_exec_name');
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('mainScreens').style.display = 'none';
+  document.getElementById('detailScreen').style.display = 'none';
+  document.getElementById('whoBar').style.display = 'none';
+}
+
+function showList(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('detailScreen').style.display = 'none';
+  document.getElementById('mainScreens').style.display = 'block';
+  document.getElementById('whoBar').style.display = 'flex';
+  document.getElementById('whoName').textContent = currentUser + ' 様';
+  renderFilters();
+  renderTodo();
+  renderList();
+}
+
+async function loadProposals(){
+  const res = await jsonp('listForSalon', {});
+  proposals = res.proposals || [];
+  renderTodo(); renderList();
+}
+
+function myAnswer(p){ return (p.answers || []).find(a => a.staffName === currentUser); }
+function iHaveRead(p){ return (p.reads || []).includes(currentUser); }
+
+function isPendingForUser(p){
+  if (CATEGORY_TYPES.includes(p.type)){
+    if (p.recipient && p.recipient !== '全体'){
+      return p.recipient === currentUser && !myAnswer(p);
+    }
+    const voted = !!myAnswer(p);
+    if (!voted) return true;
+    if (p.status === '検討_アクション待ち' && p.assignedExec === currentUser) return true;
+    return false;
+  }
+  return !iHaveRead(p);
+}
+function isOverdue(p){ return new Date() > new Date(p.deadline); }
+
+function renderTodo(){
+  const panel = document.getElementById('todoPanel');
+  const pending = proposals.filter(isPendingForUser)
+    .sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+  const overdueCount = pending.filter(isOverdue).length;
+  if (pending.length === 0){
+    panel.innerHTML = `<div class="todo-title"><span>あなたの未対応タスク</span><span>0件</span></div><div class="todo-empty">対応が必要な項目はありません。</div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="todo-title"><span>あなたの未対応タスク</span><span>${pending.length}件${overdueCount ? '(期限超過 '+overdueCount+'件)' : ''}</span></div>
+    ${pending.slice(0,8).map(p => {
+      const od = isOverdue(p);
+      const d = new Date(p.deadline);
+      const dStr = (d.getMonth()+1) + '/' + d.getDate() + ' 期限';
+      return `<div class="todo-item ${od?'overdue':''}" onclick="openDetail('${p.id}')">
+        <span class="t">[${escapeHtml(p.type)}] ${escapeHtml(p.title)}</span>
+        <span class="d">${od?'期限超過':dStr}</span>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function renderFilters(){
+  const el = document.getElementById('filters');
+  const options = [
+    {key:'todo', label:'未対応'},
+    {key:'all', label:'すべて'},
+    {key:'提案', label:'提案'},
+    {key:'情報共有', label:'情報共有'},
+    {key:'お知らせ', label:'お知らせ'}
+  ];
+  el.innerHTML = options.map(o => `<div class="filter-chip ${activeFilter===o.key?'active':''}" onclick="setFilter('${o.key}')">${o.label}</div>`).join('');
+}
+function setFilter(key){ activeFilter = key; renderFilters(); renderList(); }
+
+function statusClass(p){
+  if (!CATEGORY_TYPES.includes(p.type)) return 'info';
+  if (p.status === '決定') return 'decided-go';
+  if (p.status === '見送り') return 'decided-no';
+  if (p.status === '検討_アクション待ち') return 'considering';
+  return 'pending';
+}
+function statusTag(p){
+  if (!CATEGORY_TYPES.includes(p.type)){
+    return iHaveRead(p) ? '<span class="tag go">既読</span>' : '<span class="tag info">未読</span>';
+  }
+  if (p.status === '決定' && p.nextAction === '個人宛回答') return '<span class="tag go">個人宛:回答済み</span>';
+  if (p.status === '決定') return '<span class="tag go">決定:' + escapeHtml(p.nextAction) + '</span>';
+  if (p.status === '見送り') return '<span class="tag no">見送り確定</span>';
+  if (p.status === '検討_アクション待ち') return '<span class="tag considering">検討決定・Next待ち(担当:' + escapeHtml(p.assignedExec||'未設定') + ')</span>';
+  if (p.recipient && p.recipient !== '全体') return '<span class="tag pending">個人宛:回答待ち</span>';
+  const a = myAnswer(p);
+  return a ? '<span class="tag considering">回答済・集計待ち</span>' : '<span class="tag pending">未確認</span>';
+}
+function storeTagsHtml(p){
+  const stores = (p.targetStores || []).filter(Boolean);
+  if (stores.length === 0) return '';
+  return '<div class="store-tags">' + stores.map(s => {
+    const cls = s === 'ヘッドスパ専門店' ? 'spa' : 'salon';
+    return `<span class="store-tag ${cls}">${escapeHtml(s)}</span>`;
+  }).join('') + '</div>';
+}
+
+function renderList(){
+  const el = document.getElementById('listScreen');
+  let list = proposals;
+  if (activeFilter === 'todo') list = proposals.filter(isPendingForUser);
+  else if (activeFilter !== 'all') list = proposals.filter(p => p.type === activeFilter);
+
+  if (list.length === 0){
+    el.innerHTML = '<div class="empty">該当する項目はありません。</div>';
+    return;
+  }
+  el.innerHTML = list.map(p => {
+    const cats = (p.categories||[]).filter(Boolean);
+    const answered = (p.answers||[]).length;
+    const readCount = (p.reads||[]).length;
+    const isPersonal = p.recipient && p.recipient !== '全体';
+    let progress;
+    if (isPersonal) progress = `宛先:${p.recipient}様${answered > 0 ? '(回答済み)' : '(回答待ち)'}`;
+    else progress = CATEGORY_TYPES.includes(p.type)
+      ? `確認状況:${answered}/${p.totalExecutives}人`
+      : `既読:${readCount}/${p.totalExecutives}人`;
+    const isInternal = p.source === '社内';
+    const sourceLabel = isInternal ? `提案者:${escapeHtml(p.staffName)}さん` : escapeHtml(p.dealerName || 'ディーラー');
+    return `
+      <div class="card st-${statusClass(p)}" onclick="openDetail('${p.id}')">
+        ${storeTagsHtml(p)}
+        <div class="row1">
+          <span class="dealer">${isInternal ? '<span class="source-tag">社内</span> ' : ''}[${escapeHtml(p.type)}] ${sourceLabel}</span>
+          ${statusTag(p)}
+        </div>
+        ${(cats.length || p.genre) ? `<div class="cat-tags">${p.genre ? `<span class="cat-tag">${escapeHtml(p.genre)}</span>` : ''}${cats.map(c=>`<span class="cat-tag">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+        <div class="title">${escapeHtml(p.title)}</div>
+        <div class="meta">${escapeHtml(p.price || '')}${p.price && p.period ? ' ・ ' : ''}${escapeHtml(p.period || '')}</div>
+        <div class="progress">${progress}</div>
+      </div>`;
+  }).join('');
+}
+
+function openDetail(id){
+  currentDetailId = id;
+  selectedPersonalJudgment = '';
+  personalConsiderDetail = '';
+  personalConsiderDeadline = '';
+  document.getElementById('mainScreens').style.display = 'none';
+  document.getElementById('detailScreen').style.display = 'block';
+  renderDetail();
+}
+
+function renderDetail(){
+  const p = proposals.find(x => x.id === currentDetailId);
+  if (!p) return;
+  const body = document.getElementById('detailBody');
+  const cats = (p.categories||[]).filter(Boolean);
+
+  let html = `
+    ${storeTagsHtml(p)}
+    ${p.imageUrl ? `<img class="detail-image" style="display:block" src="${escapeAttr(p.imageUrl)}">` : ''}
+    <div class="detail-dealer">${p.source === '社内' ? '<span class="source-tag">社内</span> ' : ''}[${escapeHtml(p.type)}] ${p.source === '社内' ? '提案者:' + escapeHtml(p.staffName) + 'さん' : escapeHtml(p.dealerName || '') + ' ・ 担当:' + escapeHtml(p.staffName || '')}</div>
+    ${(cats.length || p.genre) ? `<div class="cat-tags">${p.genre ? `<span class="cat-tag">${escapeHtml(p.genre)}</span>` : ''}${cats.map(c=>`<span class="cat-tag">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+    <div class="detail-title">${escapeHtml(p.title)}</div>
+    ${p.price ? `<div class="kv"><div class="k">価格</div><div>${escapeHtml(p.price)}</div></div>` : ''}
+    ${p.period ? `<div class="kv"><div class="k">期間</div><div>${escapeHtml(p.period)}</div></div>` : ''}
+    ${p.url ? `<div class="kv"><div class="k">参考URL</div><div><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a></div></div>` : ''}
+    <div class="kv"><div class="k">詳細</div><div class="reason">${escapeHtml(p.reason || '未記載')}</div></div>
+  `;
+
+  if (!CATEGORY_TYPES.includes(p.type)){
+    const read = iHaveRead(p);
+    html += `
+      <button class="read-btn" ${read?'disabled':''} onclick="doMarkRead()">${read?'既読済みです':'確認しました(既読にする)'}</button>
+      <div class="section-label">既読状況</div>
+      <div class="exec-grid" id="execGrid"></div>
+    `;
+    body.innerHTML = html;
+    renderReadGrid(p);
+    return;
+  }
+
+  const isPersonal = p.recipient && p.recipient !== '全体';
+  if (isPersonal){
+    const mine = myAnswer(p);
+    const messageBox = p.recipientMessage
+      ? `<div class="kv"><div class="k">宛先へのメッセージ</div><div class="reason">${escapeHtml(p.recipientMessage)}</div></div>` : '';
+    if (currentUser === p.recipient){
+      if (mine){
+        html += `
+          ${messageBox}
+          <div class="section-label">あなたの回答</div>
+          <div class="decision-banner ${mine.judgment==='見送り' ? 'no':'go'}">
+            「${escapeHtml(mine.judgment)}」として回答済みです。${mine.message ? '<br>返信内容:「' + escapeHtml(mine.message) + '」' : ''}
+          </div>
+        `;
+      } else {
+        html += `
+          ${messageBox}
+          <div class="section-label">あなた宛ての個別提案です。回答してください</div>
+          <div class="judge-btns">
+            <button class="jbtn" id="pjGo" onclick="openConsiderModal('personal')">検討する</button>
+            <button class="jbtn" id="pjNo" onclick="selectPersonalJudgment('見送り')">見送る</button>
+          </div>
+          <textarea id="personalReplyMessage" placeholder="ディーラーへの返信メッセージ(任意)" style="width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:14px;min-height:80px;box-sizing:border-box;"></textarea>
+          <button class="read-btn" style="margin-top:12px;" onclick="submitPersonalReply()">この内容で返信する</button>
+        `;
+      }
+    } else {
+      html += `
+        ${messageBox}
+        <div class="section-label">宛先:${escapeHtml(p.recipient)}様</div>
+        ${mine
+          ? `<div class="decision-banner ${mine.judgment==='見送り'?'no':'go'}">${escapeHtml(p.recipient)}様が「${escapeHtml(mine.judgment)}」として回答済みです。</div>`
+          : `<div class="decision-banner pending">${escapeHtml(p.recipient)}様からの返信をお待ちしています。</div>`}
+      `;
+    }
+    body.innerHTML = html;
+    return;
+  }
+
+  const mine = myAnswer(p) || {};
+  html += `
+    <div class="section-label">あなたの判断(${currentUser})</div>
+    <div class="judge-btns">
+      <button class="jbtn ${mine.judgment==='検討' ? 'sel-go':''}" onclick="openConsiderModal('group')">検討する</button>
+      <button class="jbtn ${mine.judgment==='見送り' ? 'sel-no':''}" onclick="setJudgment('見送り')">見送る</button>
+    </div>
+
+    <div class="section-label">幹部の確認状況</div>
+    <div class="exec-grid" id="execGrid"></div>
+
+    <div id="nextActionArea"></div>
+    <div id="decisionArea"></div>
+  `;
+  body.innerHTML = html;
+  renderExecGrid(p);
+  renderNextActionArea(p);
+  renderDecisionArea(p);
+}
+
+function renderReadGrid(p){
+  const grid = document.getElementById('execGrid');
+  const reads = p.reads || [];
+  const rows = [];
+  for (let i=0;i<p.totalExecutives;i++){
+    if (i < reads.length){
+      rows.push(`<div class="exec-row"><span>${escapeHtml(reads[i])}</span><span class="exec-status read">既読</span></div>`);
+    } else {
+      rows.push(`<div class="exec-row"><span>未読</span><span class="exec-status">-</span></div>`);
+    }
+  }
+  grid.innerHTML = rows.join('');
+}
+
+function renderExecGrid(p){
+  const grid = document.getElementById('execGrid');
+  const answers = p.answers || [];
+  let rows = answers.map(a => {
+    const cls = a.judgment === '検討' ? 'go' : a.judgment === '見送り' ? 'no' : '';
+    let detail = escapeHtml(a.judgment);
+    if (a.judgment === '検討' && a.considerDetail){
+      detail += '(' + escapeHtml(a.considerDetail);
+      if (a.considerDetail === '社内でもう少し検討したい' && a.considerDeadline) detail += ' 期限:' + escapeHtml(a.considerDeadline);
+      detail += ')';
+    }
+    return `<div class="exec-row"><span>${escapeHtml(a.staffName)}</span><span class="exec-status ${cls}">${detail}</span></div>`;
+  });
+  const remain = (p.totalExecutives || 5) - answers.length;
+  for (let i=0;i<remain;i++) rows.push('<div class="exec-row"><span>未回答</span><span class="exec-status">-</span></div>');
+  grid.innerHTML = rows.join('');
+}
+
+function renderNextActionArea(p){
+  const area = document.getElementById('nextActionArea');
+  if (p.status !== '検討_アクション待ち'){ area.innerHTML=''; return; }
+  if (p.assignedExec && p.assignedExec !== currentUser){
+    area.innerHTML = `<div class="section-label">Nextアクション</div><div class="decision-banner pending">「検討」が過半数で確定しました。担当幹部(${escapeHtml(p.assignedExec)})がNextアクションを選択中です。</div>`;
+    return;
+  }
+  area.innerHTML = `
+    <div class="section-label">Nextアクションを選択してください${p.assignedExec ? '(担当:あなた)' : '(どなたでも選択できます)'}</div>
+    <div class="action-btns">
+      ${NEXT_ACTIONS.map(o => `<button class="abtn" onclick="submitNextAction('${o}')">${o}</button>`).join('')}
+    </div>`;
+}
+
+function renderDecisionArea(p){
+  const area = document.getElementById('decisionArea');
+  if (p.status === '決定'){
+    area.innerHTML = `<div class="decision-banner go">Nextアクションは「${escapeHtml(p.nextAction)}」に決定しました。ディーラー側にも反映されています。</div>`;
+  } else if (p.status === '見送り'){
+    area.innerHTML = `<div class="decision-banner no">過半数の判断により「見送り」が確定しました。</div>`;
+  } else if (p.status === '検討_アクション待ち'){
+    // renderNextActionAreaで表示済み
+  } else {
+    area.innerHTML = `<div class="decision-banner pending">まだ過半数の判断が揃っていません。3人が同じ判断をすると自動的に確定します。</div>`;
+  }
+}
+
+async function setJudgment(judgment, considerDetail, considerDeadline){
+  await post('submitJudgment', { proposalId: currentDetailId, staffName: currentUser, judgment, considerDetail: considerDetail || '', considerDeadline: considerDeadline || '' });
+  await loadProposals(); renderDetail();
+}
+async function submitNextAction(action){
+  const res = await post('submitNextAction', { proposalId: currentDetailId, staffName: currentUser, action });
+  if (!res.success) alert(res.error || '選択できませんでした');
+  await loadProposals(); renderDetail();
+}
+async function doMarkRead(){
+  await post('markRead', { proposalId: currentDetailId, staffName: currentUser });
+  await loadProposals(); renderDetail();
+}
+
+let selectedPersonalJudgment = '';
+let personalConsiderDetail = '';
+let personalConsiderDeadline = '';
+function selectPersonalJudgment(judgment){
+  selectedPersonalJudgment = judgment;
+  const goBtn = document.getElementById('pjGo');
+  const noBtn = document.getElementById('pjNo');
+  if (goBtn) goBtn.classList.toggle('sel-go', judgment === '検討');
+  if (noBtn) noBtn.classList.toggle('sel-no', judgment === '見送り');
+}
+async function submitPersonalReply(){
+  if (!selectedPersonalJudgment){ alert('「検討する」「見送る」のいずれかを選択してください'); return; }
+  const message = document.getElementById('personalReplyMessage').value;
+  await post('submitJudgment', {
+    proposalId: currentDetailId, staffName: currentUser, judgment: selectedPersonalJudgment, replyMessage: message,
+    considerDetail: selectedPersonalJudgment === '検討' ? personalConsiderDetail : '',
+    considerDeadline: selectedPersonalJudgment === '検討' ? personalConsiderDeadline : ''
+  });
+  selectedPersonalJudgment = ''; personalConsiderDetail = ''; personalConsiderDeadline = '';
+  await loadProposals(); renderDetail();
+}
+
+// ---------- 「検討する」詳細モーダル ----------
+let considerModalContext = null;
+let selectedConsiderDetail = '';
+function openConsiderModal(context){
+  considerModalContext = context;
+  selectedConsiderDetail = '';
+  document.querySelectorAll('.modal-opt').forEach(b => b.classList.remove('sel'));
+  document.getElementById('modalDeadlineArea').style.display = 'none';
+  document.getElementById('modalDeadline').value = '';
+  document.getElementById('considerModal').style.display = 'flex';
+}
+function closeConsiderModal(){
+  document.getElementById('considerModal').style.display = 'none';
+}
+function selectConsiderDetail(value){
+  selectedConsiderDetail = value;
+  document.querySelectorAll('.modal-opt').forEach(b => b.classList.toggle('sel', b.dataset.value === value));
+  document.getElementById('modalDeadlineArea').style.display = value === '社内でもう少し検討したい' ? 'block' : 'none';
+}
+async function confirmConsiderModal(){
+  if (!selectedConsiderDetail){ alert('いずれかを選択してください'); return; }
+  const deadline = document.getElementById('modalDeadline').value;
+  if (selectedConsiderDetail === '社内でもう少し検討したい' && !deadline){ alert('期限を入力してください'); return; }
+  closeConsiderModal();
+  if (considerModalContext === 'group'){
+    await setJudgment('検討', selectedConsiderDetail, deadline);
+  } else if (considerModalContext === 'personal'){
+    personalConsiderDetail = selectedConsiderDetail;
+    personalConsiderDeadline = deadline;
+    selectPersonalJudgment('検討');
+  }
+}
+
+// ---------- 社内からの提案 ----------
+function openInternalProposalModal(){
+  document.getElementById('ipTitle').value = '';
+  document.getElementById('ipReason').value = '';
+  document.getElementById('ipRecipientMessage').value = '';
+  document.getElementById('ipMessageArea').style.display = 'none';
+  const sel = document.getElementById('ipRecipient');
+  sel.innerHTML = '<option value="全体">全体(みんなに見てほしい)</option>' +
+    executivesList.filter(n => n !== currentUser).map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}様(個別)</option>`).join('');
+  sel.onchange = () => { document.getElementById('ipMessageArea').style.display = sel.value === '全体' ? 'none' : 'block'; };
+  document.getElementById('internalProposalModal').style.display = 'flex';
+}
+function closeInternalProposalModal(){
+  document.getElementById('internalProposalModal').style.display = 'none';
+}
+async function submitInternalProposal(){
+  const title = document.getElementById('ipTitle').value.trim();
+  const reason = document.getElementById('ipReason').value.trim();
+  if (!title || !reason){ alert('タイトルと提案内容は入力してください'); return; }
+  const recipient = document.getElementById('ipRecipient').value;
+  const recipientMessage = document.getElementById('ipRecipientMessage').value;
+  await post('submitProposal', {
+    type:'提案', source:'社内', staffName: currentUser,
+    title, reason, recipient, recipientMessage
+  });
+  closeInternalProposalModal();
+  await loadProposals();
+}
+
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+init();
+setInterval(() => { if(currentUser) loadProposals(); }, 30000);
+</script>
+</body>
+</html>

@@ -229,7 +229,7 @@
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbybNWscWj2DJIjRuE-sBav6iXyb7beUGvGO1U9w21GP28PCieSITyeUF9fMWBOHDrK1SA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwpuIDU-4Yw22eW55VwW9OvEJOtj7YkM9Q7ZgZF1QtshW1GSGzmdTwVGOmqtadTCsu--g/exec';
 const NEXT_ACTIONS = ['体験会','説明会','勉強会','オンラインで詳しく聞きたい'];
 const CATEGORY_TYPES = ['提案'];
 
@@ -404,8 +404,9 @@ function renderList(){
       : `既読:${readCount}/${p.totalExecutives}人`;
     const isInternal = p.source === '社内';
     const sourceLabel = isInternal ? `提案者:${escapeHtml(p.staffName)}さん` : escapeHtml(p.dealerName || 'ディーラー');
+    const cardBg = p.dealerColorBg ? ` style="background:${p.dealerColorBg};"` : '';
     return `
-      <div class="card st-${statusClass(p)}" onclick="openDetail('${p.id}')">
+      <div class="card st-${statusClass(p)}"${cardBg} onclick="openDetail('${p.id}')">
         ${storeTagsHtml(p)}
         <div class="row1">
           <span class="dealer">${isInternal ? '<span class="source-tag">社内</span> ' : ''}[${escapeHtml(p.type)}] ${sourceLabel}</span>
@@ -436,6 +437,7 @@ function renderDetail(){
   const cats = (p.categories||[]).filter(Boolean);
 
   let html = `
+    ${p.dealerColorAccent ? `<div style="height:6px; border-radius:3px; background:${p.dealerColorAccent}; margin-bottom:14px;"></div>` : ''}
     ${storeTagsHtml(p)}
     ${p.imageUrl ? `<img class="detail-image" style="display:block" src="${escapeAttr(p.imageUrl)}">` : ''}
     <div class="detail-dealer">${p.source === '社内' ? '<span class="source-tag">社内</span> ' : ''}[${escapeHtml(p.type)}] ${p.source === '社内' ? '提案者:' + escapeHtml(p.staffName) + 'さん' : escapeHtml(p.dealerName || '') + ' ・ 担当:' + escapeHtml(p.staffName || '')}</div>

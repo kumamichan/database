@@ -91,6 +91,7 @@
   #detailScreen{ padding:16px; display:none; background:var(--paper); min-height:100vh; }
   .back{ font-size:13px; color:var(--muted); background:none; border:none; padding:0 0 16px; cursor:pointer; font-family:inherit; }
   .detail-image{ width:100%; border-radius:4px; margin-bottom:14px; display:none; }
+  .detail-image-box{ margin-bottom:14px; padding:18px; text-align:center; font-size:12px; color:var(--muted); background:#ECE9E2; border-radius:4px; }
   .detail-title{ font-size:21px; margin-bottom:6px; }
   .detail-dealer{ font-size:12px; color:var(--muted); margin-bottom:6px; }
   .kv{ display:flex; border-top:1px solid var(--line); padding:10px 0; font-size:14px; }
@@ -241,12 +242,23 @@ let activeFilter = 'todo';
 function jsonp(action, params){
   return new Promise((resolve) => {
     const cbName = 'cb_' + Math.random().toString(36).slice(2);
-    window[cbName] = (data) => { resolve(data); delete window[cbName]; script.remove(); };
+    let done = false;
+    const finish = (data) => {
+      if (done) return; done = true;
+      clearTimeout(timer); delete window[cbName]; script.remove(); resolve(data);
+    };
+    window[cbName] = (data) => finish(data);
     const qs = new URLSearchParams({ action, callback: cbName, ...params });
     const script = document.createElement('script');
+    script.onerror = () => finish({ success:false, error:'通信に失敗しました(GASの公開設定・URLを確認してください)' });
+    const timer = setTimeout(() => finish({ success:false, error:'応答がありません(時間切れ)。GASのデプロイ設定を確認してください' }), 20000);
     script.src = GAS_URL + '?' + qs.toString();
     document.body.appendChild(script);
   });
+}
+function errorBoxHtml(msg){
+  return '<div style="margin:16px; padding:14px 16px; border:1px solid #97402A; background:#F3E3DD; color:#97402A; border-radius:4px; font-size:13px; line-height:1.7;">'
+    + '<strong>データを取得できませんでした</strong><br>' + escapeHtml(msg || '原因不明のエラー') + '</div>';
 }
 function post(action, payload){
   return fetch(GAS_URL, {
@@ -261,6 +273,11 @@ async function init(){
   executivesList = res.executives || [];
   const list = document.getElementById('nameList');
   list.innerHTML = '';
+  if (!res.success) {
+    list.innerHTML = errorBoxHtml(res.error);
+  } else if (executivesList.length === 0) {
+    list.innerHTML = errorBoxHtml('「幹部マスタ」シートに幹部の名前が登録されていません。A列に氏名を入力してください。');
+  }
   executivesList.forEach(name => {
     const b = document.createElement('button');
     b.className = 'name-btn'; b.textContent = name;
@@ -297,6 +314,10 @@ function showList(){
 
 async function loadProposals(){
   const res = await jsonp('listForSalon', {});
+  if (!res.success) {
+    document.getElementById('listScreen').innerHTML = errorBoxHtml(res.error);
+    return;
+  }
   proposals = res.proposals || [];
   renderTodo(); renderList();
 }
@@ -433,13 +454,14 @@ function openDetail(id){
 function renderDetail(){
   const p = proposals.find(x => x.id === currentDetailId);
   if (!p) return;
+  setTimeout(() => loadDetailImage(p), 0);
   const body = document.getElementById('detailBody');
   const cats = (p.categories||[]).filter(Boolean);
 
   let html = `
     ${p.dealerColorAccent ? `<div style="height:6px; border-radius:3px; background:${p.dealerColorAccent}; margin-bottom:14px;"></div>` : ''}
     ${storeTagsHtml(p)}
-    ${p.imageUrl ? `<img class="detail-image" style="display:block" src="${escapeAttr(p.imageUrl)}">` : ''}
+    ${p.imageUrl ? `<div id="detailImageBox" class="detail-image-box">画像を読み込み中...</div>` : ''}
     <div class="detail-dealer">${p.source === '社内' ? '<span class="source-tag">社内</span> ' : ''}[${escapeHtml(p.type)}] ${p.source === '社内' ? '提案者:' + escapeHtml(p.staffName) + 'さん' : escapeHtml(p.dealerName || '') + ' ・ 担当:' + escapeHtml(p.staffName || '')}</div>
     ${(cats.length || p.genre) ? `<div class="cat-tags">${p.genre ? `<span class="cat-tag">${escapeHtml(p.genre)}</span>` : ''}${cats.map(c=>`<span class="cat-tag">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
     <div class="detail-title">${escapeHtml(p.title)}</div>
@@ -677,6 +699,31 @@ async function submitInternalProposal(){
   await loadProposals();
 }
 
+// ---------- 画像の表示(Googleドライブの画像はGAS経由で取得して表示) ----------
+const imageCache = {};
+function extractDriveId(url){
+  const m = String(url || '').match(/\/d\/([A-Za-z0-9_-]+)/) || String(url || '').match(/[?&]id=([A-Za-z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+async function loadDetailImage(p){
+  if (!p.imageUrl || !document.getElementById('detailImageBox')) return;
+  const place = (html) => {
+    const box = document.getElementById('detailImageBox');
+    if (!box || currentDetailId !== p.id) return null;
+    box.className = ''; box.removeAttribute('style'); box.innerHTML = html;
+    return box;
+  };
+  const showImg = (src) => {
+    const box = place('<img class="detail-image" style="display:block" alt="添付画像">');
+    if (box) box.firstChild.src = src;
+  };
+  const id = extractDriveId(p.imageUrl);
+  if (!id){ showImg(p.imageUrl); return; }
+  if (imageCache[id]){ showImg(imageCache[id]); return; }
+  const res = await jsonp('getImage', { fileId: id });
+  if (res.success){ imageCache[id] = res.dataUrl; showImg(res.dataUrl); }
+  else place('<div class="detail-image-box" style="color:#97402A;">画像を表示できませんでした:' + escapeHtml(res.error || '原因不明') + '</div>');
+}
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
 
